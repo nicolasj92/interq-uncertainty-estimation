@@ -48,7 +48,7 @@ def create_nn_model(input_dim, output_dim, dropout_inference=None,  loss='mse'):
 class ICPRegressionMCDropout(ICPBase):
     def __init__(self, n_forward_passes, input_shape):
         self.n_passes = n_forward_passes
-        self.model = create_nn_model(*input_shape, dropout_inference=True)
+        self.model = create_nn_model(input_shape, 1, dropout_inference=True)
 
         super().__init__()
 
@@ -130,13 +130,18 @@ if __name__ == "__main__":
     dataloader = TEP_DataLoader()
     dataloader.load_training_data()
     X, y = dataloader.get_continuous_dataset(
-        length=150000, target_value="xmeas_35")
+        length=150000, target_value="xmeas_31", input_features=["xmeas_1", "xmeas_2", "xmeas_10", "xmeas_11", "xmeas_14", "xmeas_16", "xmeas_18", "xmeas_20", "xmeas_25", "xmeas_33"], random_all=False)
     X_train, X_valtest, y_train, y_valtest = train_test_split(
-        X, y, test_size=0.50, random_state=42)
+        X, y, test_size=0.80, random_state=42)
 
-    ensemble = ICPRegressionEnsemble(
-        n_members=20, input_shape=X_train.shape[-1])
-    ensemble.fit(X_train, y_train)
-    ensemble.save(file_prefix="./models/tep_ensemble_nll_")
+    mc_dropout = ICPRegressionMCDropout(
+        n_forward_passes=20, input_shape=X_train.shape[-1])
+    mc_dropout.fit(X_train, y_train)
+    mc_dropout.save()
+
+    # ensemble = ICPRegressionEnsemble(
+    #     n_members=10, input_shape=X_train.shape[-1])
+    # ensemble.fit(X_train, y_train)
+    # ensemble.save(file_prefix="./models/tep_ensemble_nll_")
     # ensemble.load(file_prefix='./models/tep_ensemble_nll_')
     # ensemble.calibrate(X_valtest)
