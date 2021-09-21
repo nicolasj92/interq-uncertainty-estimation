@@ -130,7 +130,7 @@ if __name__ == "__main__":
     dataloader = TEP_DataLoader()
     dataloader.load_training_data()
     X, y = dataloader.get_continuous_dataset(
-        length=150000, target_value="xmeas_31", input_features=["xmeas_1", "xmeas_2", "xmeas_10", "xmeas_11", "xmeas_14", "xmeas_16", "xmeas_18", "xmeas_20", "xmeas_25", "xmeas_33"], random_all=False)
+        length=150000, target_value="xmeas_31", input_features=["xmeas_7", "xmeas_9", "xmeas_11", "xmeas_13", "xmeas_16", "xmeas_18", "xmeas_19", "xmeas_25", "xmeas_33", "xmeas_35"], random_all=False)
     X_train, X_valtest, y_train, y_valtest = train_test_split(
         X, y, test_size=0.80, random_state=42)
 

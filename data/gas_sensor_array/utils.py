@@ -214,3 +214,102 @@ def plot_over_batches(models, X_test, y_test, batch_start=0, batch_end=10, X_val
         plt.savefig(savename)
 
     plt.show()
+
+
+def plot_accuracy_and_confidence(models, X_test, y_test, batch_start=0, batch_end=10, X_val=None, y_val=None, plot_std=False, start_label=False, stop_label=False, title="", savename=None, legend=False):
+    plt.figure(figsize=(9, 5))
+    color = iter(plt.cm.Dark2(np.linspace(0, 1, len(models))))
+    add_val = X_val is not None and y_val is not None
+    batch_ids = np.arange(batch_start, batch_end)
+
+    fig, axs = plt.subplots(2)
+
+    for name, model_runs in models.items():
+        c = next(color)
+        if add_val:
+            confidences = np.zeros((len(model_runs), 1+len(batch_ids)))
+            accuracies = np.zeros((len(model_runs), 1+len(batch_ids)))
+        else:
+            confidences = np.zeros((len(model_runs), len(batch_ids)))
+            accuracies = np.zeros((len(model_runs), len(batch_ids)))
+
+        for i, model in enumerate(model_runs):
+
+            if add_val:
+                X = X_val[i]
+                y = y_val[i]
+
+                y_conf = model.predict_proba(X)
+                confidences[i, 0] = np.mean(np.amax(y_conf, axis=1))
+
+                y_pred = model.predict(X)
+                accuracy = accuracy_score(y, y_pred)
+                accuracies[i, 0] = accuracy
+
+            for j, batch_id in enumerate(batch_ids):
+                mask = X_test["batch"] == batch_id
+                X = X_test[mask].drop("batch", axis=1)
+                y = y_test[mask]
+
+                y_conf = model.predict_proba(X)
+                confidences[i, j + int(add_val)
+                            ] = np.mean(np.amax(y_conf, axis=1))
+
+                y_pred = model.predict(X)
+                accuracy = accuracy_score(y, y_pred)
+                accuracies[i, j + int(add_val)] = accuracy
+
+        plot_batch_ids = batch_ids + 1
+        if add_val:
+            plot_batch_ids = np.insert(batch_ids, 0, np.min(batch_ids) - 1)
+
+        mean_accuracy = np.mean(accuracies, axis=0)
+        std_accuracy = np.std(accuracies, axis=0)
+        axs[0].plot(plot_batch_ids, mean_accuracy, 'x--', c=c,
+                    label="Accuracy ({})".format(name))
+        if plot_std:
+            axs[0].fill_between(plot_batch_ids, mean_accuracy-std_accuracy,
+                                mean_accuracy + std_accuracy, color=c, alpha=0.2)
+
+        mean_confidence = np.mean(confidences, axis=0)
+        std_confidence = np.std(confidences, axis=0)
+        axs[1].plot(plot_batch_ids, mean_confidence, 'x--', c=c,
+                    label="Confidence ({})".format(name))
+        if plot_std:
+            axs[1].fill_between(plot_batch_ids, mean_confidence-std_confidence,
+                                mean_confidence + std_confidence, color=c, alpha=0.2)
+
+    axs[1].set_xlabel("Time")
+    axs[1].set_ylim(0.25, 1.0)
+    axs[0].set_ylim(0.25, 1.0)
+
+    axs[0].set_ylabel("Accuracy")
+    axs[1].set_ylabel("Confidence")
+
+    if add_val:
+        tick_locations = plot_batch_ids
+        tick_text = [str(i + 2) for i in range(len(plot_batch_ids))]
+
+        if start_label and stop_label:
+            tick_text = ["--"] * len(plot_batch_ids)
+            tick_text[1] = start_label
+            tick_text[-1] = stop_label
+
+        tick_text[0] = "Val"
+
+        axs[0].set_xticks([])
+        axs[1].set_xticks(ticks=tick_locations)
+        axs[1].set_xticklabels(labels=tick_text)
+
+    axs[1].grid(axis="y")
+    axs[0].grid()
+
+    fig.subplots_adjust(hspace=0.05)
+
+    if legend:
+        axs[1].legend(loc="lower left", prop={'size': 12}, ncol=2)
+
+    if savename is not None:
+        plt.savefig(savename)
+
+    plt.show()
